@@ -1,0 +1,86 @@
+{
+  "common": {
+    "appName": "GitHub Code Analyzer",
+    "appDescription": "Visualize and understand code structure with AI",
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Retry",
+    "clear": "Clear",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "darkMode": "Dark",
+    "lightMode": "Light"
+  },
+  "landing": {
+    "tagline": "Visualize and understand any GitHub repository's code structure with AI-powered analysis",
+    "inputPlaceholder": "https://github.com/owner/repo",
+    "analyzeButton": "Analyze",
+    "invalidUrl": "Please enter a valid GitHub repository URL",
+    "validUrl": "Valid GitHub URL",
+    "emptyUrl": "Enter a GitHub repository URL to get started"
+  },
+  "analyze": {
+    "topBar": {
+      "backToHome": "Back to Home"
+    },
+    "leftPanel": {
+      "repoInputLabel": "Repository URL",
+      "analyzeButton": "Analyze"
+    },
+    "logs": {
+      "title": "Logs",
+      "clear": "Clear",
+      "noLogs": "No log entries yet",
+      "expandAll": "Expand All",
+      "collapseAll": "Collapse All"
+    },
+    "aiResult": {
+      "title": "AI Analysis",
+      "languages": "Languages",
+      "techStack": "Tech Stack",
+      "entryFiles": "Entry Files",
+      "summary": "Summary",
+      "analyzing": "Analyzing repository...",
+      "error": "Analysis failed",
+      "retry": "Retry Analysis",
+      "noResult": "No analysis results yet"
+    },
+    "fileTree": {
+      "title": "Files",
+      "searchPlaceholder": "Search files...",
+      "fileCount": "{count} files",
+      "noFiles": "No files found",
+      "loading": "Loading file tree..."
+    },
+    "panelToggle": {
+      "left": "Toggle left panel",
+      "center": "Toggle file tree panel",
+      "right": "Toggle code viewer panel"
+    },
+    "codeViewer": {
+      "title": "Code",
+      "selectFile": "Select a file from the tree to view its contents",
+      "loading": "Loading file...",
+      "error": "Failed to load file",
+      "copySuccess": "Code copied to clipboard",
+      "lines": "{count} lines"
+    }
+  },
+  "log": {
+    "messages": {
+      "repoValidating": "Validating repository URL...",
+      "repoValidated": "Repository validated successfully",
+      "repoInvalid": "Invalid repository URL",
+      "repoFetchFailed": "Failed to fetch repository: {error}",
+      "treeFetching": "Fetching file tree...",
+      "treeFetched": "File tree loaded: {count} items",
+      "filesFiltered": "Filtered to {count} code files from {total} total",
+      "aiStarted": "AI analysis started ({provider})",
+      "aiComplete": "AI analysis completed in {duration}ms",
+      "aiFailed": "AI analysis failed: {error}",
+      "remainingBytes": "remaining {count} bytes"
+    }
+  }
+}
