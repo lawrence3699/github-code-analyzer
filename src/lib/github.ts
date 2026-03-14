@@ -1,6 +1,13 @@
 import { Octokit } from '@octokit/rest';
 
 import type { RepoInfo, TreeNode, TreeResult, FileContent } from '../types/github';
+import {
+  repoInfoCache,
+  repoTreeCache,
+  updateRateLimit,
+  getRateLimit,
+  hasToken,
+} from './github-cache';
 
 const MAX_FILE_SIZE = 1_000_000; // 1MB limit
 
@@ -19,6 +26,17 @@ export class GitHubApiError extends Error {
   }
 }
 
+function formatRateLimitHint(): string {
+  const rateLimit = getRateLimit();
+  if (hasToken()) {
+    const resetTime = rateLimit
+      ? new Date(rateLimit.reset * 1000).toLocaleTimeString()
+      : 'unknown';
+    return `Rate limit resets at ${resetTime}.`;
+  }
+  return 'Please set GITHUB_TOKEN for higher limits (60 → 5,000 req/hr).';
+}
+
 function handleApiError(error: unknown): never {
   if (
     error instanceof Error &&
@@ -32,7 +50,7 @@ function handleApiError(error: unknown): never {
     }
     if (status === 403) {
       throw new GitHubApiError(
-        'GitHub API rate limit exceeded. Please set GITHUB_TOKEN for higher limits.',
+        `GitHub API rate limit exceeded. ${formatRateLimitHint()}`,
         403,
       );
     }
@@ -48,21 +66,35 @@ function handleApiError(error: unknown): never {
   );
 }
 
+function extractRateLimit(headers: Record<string, string | undefined>): void {
+  updateRateLimit(headers);
+}
+
+export { getRateLimit, hasToken } from './github-cache';
+
 export async function getRepoInfo(owner: string, repo: string): Promise<RepoInfo> {
+  const cacheKey = `${owner}/${repo}`;
+  const cached = repoInfoCache.get(cacheKey);
+  if (cached) return cached;
+
   const octokit = createOctokit();
 
   try {
-    const { data } = await octokit.rest.repos.get({ owner, repo });
+    const response = await octokit.rest.repos.get({ owner, repo });
+    extractRateLimit(response.headers as Record<string, string | undefined>);
 
-    return {
-      name: data.name,
-      fullName: data.full_name,
-      description: data.description ?? null,
-      defaultBranch: data.default_branch,
-      stars: data.stargazers_count,
-      forks: data.forks_count,
-      language: data.language ?? null,
+    const info: RepoInfo = {
+      name: response.data.name,
+      fullName: response.data.full_name,
+      description: response.data.description ?? null,
+      defaultBranch: response.data.default_branch,
+      stars: response.data.stargazers_count,
+      forks: response.data.forks_count,
+      language: response.data.language ?? null,
     };
+
+    repoInfoCache.set(cacheKey, info);
+    return info;
   } catch (error: unknown) {
     handleApiError(error);
   }
@@ -139,22 +171,29 @@ export async function getRepoTree(
   repo: string,
   defaultBranch?: string,
 ): Promise<TreeResult> {
+  const branch = defaultBranch ?? (await getRepoInfo(owner, repo)).defaultBranch;
+  const cacheKey = `${owner}/${repo}/${branch}`;
+  const cached = repoTreeCache.get(cacheKey);
+  if (cached) return cached;
+
   const octokit = createOctokit();
 
   try {
-    const branch = defaultBranch ?? (await getRepoInfo(owner, repo)).defaultBranch;
-
-    const { data } = await octokit.rest.git.getTree({
+    const response = await octokit.rest.git.getTree({
       owner,
       repo,
       tree_sha: branch,
       recursive: 'true',
     });
+    extractRateLimit(response.headers as Record<string, string | undefined>);
 
-    return {
-      tree: buildTree(data.tree),
-      truncated: data.truncated === true,
+    const result: TreeResult = {
+      tree: buildTree(response.data.tree),
+      truncated: response.data.truncated === true,
     };
+
+    repoTreeCache.set(cacheKey, result);
+    return result;
   } catch (error: unknown) {
     if (error instanceof GitHubApiError) throw error;
     handleApiError(error);
@@ -169,11 +208,14 @@ export async function getFileContent(
   const octokit = createOctokit();
 
   try {
-    const { data } = await octokit.rest.repos.getContent({
+    const response = await octokit.rest.repos.getContent({
       owner,
       repo,
       path,
     });
+    extractRateLimit(response.headers as Record<string, string | undefined>);
+
+    const { data } = response;
 
     if (Array.isArray(data) || data.type !== 'file') {
       throw new GitHubApiError('Path is not a file', 400);

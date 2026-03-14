@@ -33,7 +33,70 @@ export interface CodeFileInfo {
 
 export interface AIProvider {
   readonly name: string;
-  analyze(files: readonly CodeFileInfo[], repoName: string): Promise<AIAnalysisResult>;
+  analyze(
+    files: readonly CodeFileInfo[],
+    repoName: string,
+    fileContents?: ReadonlyMap<string, string>,
+  ): Promise<AIAnalysisResult>;
 }
 
 export type AIProviderName = 'claude' | 'codex';
+
+// ===== Entry File Verification =====
+export interface EntryFileVerification {
+  readonly is_entry_file: boolean;
+  readonly entry_function_name: string | null;
+  readonly reason: string;
+  readonly confidence: number;
+}
+
+// ===== Function Sub-call Analysis =====
+export interface SubFunction {
+  readonly name: string;
+  readonly file: string | null;
+  readonly description: string;
+  readonly drillDown: -1 | 0 | 1;
+  readonly category: 'core' | 'util' | 'io' | 'config' | 'lifecycle' | 'other';
+}
+
+export interface FunctionAnalysis {
+  readonly function_name: string;
+  readonly file_path: string;
+  readonly sub_functions: readonly SubFunction[];
+  readonly summary: string;
+}
+
+// ===== Call Graph Nodes =====
+export type CallGraphNodeStatus = 'analyzed' | 'pending' | 'skipped' | 'not_found';
+
+export interface CallGraphNode {
+  readonly id: string;
+  readonly functionName: string;
+  readonly filePath: string;
+  readonly description: string;
+  readonly depth: number;
+  readonly children: readonly CallGraphNode[];
+  readonly status: CallGraphNodeStatus;
+}
+
+// ===== Call Graph Analysis Result =====
+export type CallGraphFailReason =
+  | 'entry_file_fetch_failed'
+  | 'function_analysis_failed'
+  | 'unexpected_error';
+
+export interface CallGraphResult {
+  readonly success: boolean;
+  readonly reason?: CallGraphFailReason;
+  readonly errorDetail?: string;
+  readonly nodesAnalyzed: number;
+}
+
+// ===== Function Location Result =====
+export interface FunctionLocation {
+  readonly filePath: string;
+  readonly startLine: number;
+  readonly endLine: number;
+  readonly code: string;
+  readonly truncated: boolean;
+}

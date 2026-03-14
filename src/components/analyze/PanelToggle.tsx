@@ -1,18 +1,19 @@
 'use client';
 
-import { PanelLeft, FolderTree, Code2 } from 'lucide-react';
+import { PanelLeft, FolderTree, Code2, Network } from 'lucide-react';
 import { useLocale } from '../../hooks/useLocale';
 import type { PanelVisibility } from '../../lib/panel-layout';
 
 interface PanelToggleProps {
   readonly visibility: PanelVisibility;
-  readonly onToggle: (panel: 'left' | 'center' | 'right') => void;
+  readonly onToggle: (panel: 'left' | 'center' | 'right' | 'callGraph') => void;
 }
 
 const PANELS = [
   { key: 'left' as const, Icon: PanelLeft, i18nKey: 'analyze.panelToggle.left' },
   { key: 'center' as const, Icon: FolderTree, i18nKey: 'analyze.panelToggle.center' },
   { key: 'right' as const, Icon: Code2, i18nKey: 'analyze.panelToggle.right' },
+  { key: 'callGraph' as const, Icon: Network, i18nKey: 'analyze.panelToggle.callGraph' },
 ] as const;
 
 export function PanelToggle({ visibility, onToggle }: PanelToggleProps): React.ReactElement {

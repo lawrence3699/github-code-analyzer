@@ -8,6 +8,8 @@ import { useLocale } from '../../hooks/useLocale';
 import { useLogger } from '../../hooks/useLogger';
 import { useGitHubRepo } from '../../hooks/useGitHubRepo';
 import { useAIAnalysis } from '../../hooks/useAIAnalysis';
+import { useEntryVerification } from '../../hooks/useEntryVerification';
+import { useCallGraph } from '../../hooks/useCallGraph';
 import { filterCodeFiles } from '../../lib/file-filter';
 import { interpolate } from '../../i18n';
 import { Logo } from '../../components/landing/Logo';
@@ -18,6 +20,7 @@ import { SplitHandle } from '../../components/analyze/SplitHandle';
 import { LeftPanel } from '../../components/analyze/LeftPanel';
 import { FileTreePanel } from '../../components/analyze/FileTreePanel';
 import { CodeViewerPanel } from '../../components/analyze/CodeViewerPanel';
+import { CallGraphPanel } from '../../components/analyze/CallGraphPanel';
 import { usePanelLayout } from '../../hooks/usePanelLayout';
 import type { AIProviderName } from '../../types/ai';
 import type { TreeNode } from '../../types/github';
@@ -34,12 +37,27 @@ function countTreeNodes(nodes: readonly TreeNode[]): number {
   return count;
 }
 
+function flattenTreePaths(nodes: readonly TreeNode[]): readonly string[] {
+  const paths: string[] = [];
+  for (const node of nodes) {
+    if (node.type === 'blob') {
+      paths.push(node.path);
+    }
+    if (node.children) {
+      paths.push(...flattenTreePaths(node.children));
+    }
+  }
+  return paths;
+}
+
 function AnalyzeContent(): React.ReactElement {
   const searchParams = useSearchParams();
   const { t } = useLocale();
   const { logs, addLog, clearLogs } = useLogger();
   const github = useGitHubRepo();
   const ai = useAIAnalysis();
+  const entryVerification = useEntryVerification();
+  const callGraphHook = useCallGraph();
 
   const panel = usePanelLayout();
   const repoUrl = searchParams.get('repo') ?? '';
@@ -49,7 +67,7 @@ function AnalyzeContent(): React.ReactElement {
     async (url: string, provider: AIProviderName): Promise<void> => {
       addLog('info', t('log.messages.repoValidating'));
 
-      let result: { readonly repoInfo: { readonly fullName: string; readonly name: string; readonly defaultBranch: string }; readonly tree: readonly TreeNode[] };
+      let result: { readonly repoInfo: { readonly fullName: string; readonly name: string; readonly defaultBranch: string; readonly description: string | null }; readonly tree: readonly TreeNode[] };
       try {
         const fetched = await github.validateAndFetch(url);
         if (!fetched) {
@@ -100,6 +118,83 @@ function AnalyzeContent(): React.ReactElement {
           }),
           { label: 'AI Response', data: aiResult },
         );
+
+        // === Call Graph Pipeline: Entry Verification → Function Analysis ===
+        if (aiResult.entry_files.length > 0) {
+          const primaryLanguages = aiResult.primary_languages.map((l) => l.language);
+
+          // Phase 1: Verify entry files
+          for (const entry of aiResult.entry_files) {
+            addLog('info', interpolate(t('log.messages.entryVerifyStart'), { path: entry.path }));
+          }
+
+          try {
+            const verifiedEntry = await entryVerification.verifyEntryFiles(
+              aiResult.entry_files,
+              {
+                owner,
+                repo,
+                repoName: result.repoInfo.name,
+                repoDescription: result.repoInfo.description,
+                primaryLanguages,
+                summary: aiResult.summary,
+              },
+            );
+
+            if (verifiedEntry) {
+              addLog(
+                'success',
+                interpolate(t('log.messages.entryVerifyComplete'), {
+                  path: verifiedEntry.path,
+                  name: verifiedEntry.functionName,
+                }),
+              );
+
+              // Phase 2 & 3: Analyze call graph
+              const fileList = flattenTreePaths(treeNodes);
+              addLog(
+                'info',
+                interpolate(t('log.messages.drillStart'), { depth: '2' }),
+              );
+
+              const cgResult = await callGraphHook.analyzeEntryFunction(
+                verifiedEntry.path,
+                verifiedEntry.functionName,
+                {
+                  owner,
+                  repo,
+                  repoName: result.repoInfo.name,
+                  summary: aiResult.summary,
+                  primaryLanguages,
+                  fileList,
+                },
+              );
+
+              if (cgResult.success) {
+                addLog(
+                  'success',
+                  interpolate(t('log.messages.drillComplete'), {
+                    total: String(cgResult.nodesAnalyzed),
+                  }),
+                );
+              } else {
+                addLog(
+                  'warning',
+                  interpolate(t('log.messages.callGraphFailed'), {
+                    reason: cgResult.errorDetail ?? cgResult.reason ?? 'unknown',
+                  }),
+                );
+              }
+            } else {
+              addLog('warning', t('log.messages.entryVerifyNone'));
+            }
+          } catch (err) {
+            const detail = err instanceof Error ? err.message : 'Unknown';
+            addLog('error', interpolate(t('log.messages.callGraphFailed'), { reason: detail }));
+          }
+        } else {
+          addLog('info', t('log.messages.noEntryFiles'));
+        }
       } else {
         addLog(
           'error',
@@ -182,7 +277,7 @@ function AnalyzeContent(): React.ReactElement {
         </div>
       </header>
 
-      {/* Three-panel layout */}
+      {/* Four-panel layout */}
       <main
         ref={panel.containerRef}
         className={`flex flex-1 min-h-0 flex-col md:flex-row ${panel.isDragging ? 'select-none' : ''}`}
@@ -243,6 +338,27 @@ function AnalyzeContent(): React.ReactElement {
               loading={github.fileLoading}
               error={github.error}
               selectedPath={github.selectedFile}
+            />
+          </div>
+        )}
+
+        {/* Handle between right and callGraph */}
+        {panel.visibility.right && panel.visibility.callGraph && (
+          <SplitHandle {...panel.getHandleProps(2)} />
+        )}
+
+        {/* Call Graph Panel */}
+        {panel.visibility.callGraph && (
+          <div
+            className="h-64 md:h-auto overflow-hidden shrink-0"
+            style={{ width: panel.widths[3] || undefined }}
+          >
+            <CallGraphPanel
+              callGraph={callGraphHook.callGraph}
+              loading={callGraphHook.analyzing}
+              stats={callGraphHook.stats}
+              currentFunction={callGraphHook.currentFunction}
+              onCancel={callGraphHook.cancel}
             />
           </div>
         )}

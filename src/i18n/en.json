@@ -57,7 +57,19 @@
     "panelToggle": {
       "left": "Toggle left panel",
       "center": "Toggle file tree panel",
-      "right": "Toggle code viewer panel"
+      "right": "Toggle code viewer panel",
+      "callGraph": "Toggle call graph panel"
+    },
+    "callGraph": {
+      "title": "Call Graph",
+      "empty": "Call graph will appear after analysis",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit fullscreen",
+      "progress": "Analyzing: {analyzed}/{total}",
+      "currentFunction": "Analyzing: {name}",
+      "cancelAnalysis": "Cancel Analysis"
     },
     "codeViewer": {
       "title": "Code",
@@ -80,7 +92,27 @@
       "aiStarted": "AI analysis started ({provider})",
       "aiComplete": "AI analysis completed in {duration}ms",
       "aiFailed": "AI analysis failed: {error}",
-      "remainingBytes": "remaining {count} bytes"
+      "remainingBytes": "remaining {count} bytes",
+      "entryVerifyStart": "Verifying entry file: {path}...",
+      "entryVerifyConfirmed": "Confirmed entry: {path}, function: {name}",
+      "entryVerifyRejected": "{path} is not entry file: {reason}",
+      "entryVerifyComplete": "Entry identified: {path}:{name}",
+      "entryVerifyNone": "No entry file confirmed",
+      "functionAnalyzeStart": "Analyzing sub-functions of {name}...",
+      "functionAnalyzeResult": "Found {count} key sub-functions",
+      "functionLocating": "Locating function {name}...",
+      "functionLocated": "Found {name} in {file} (line {line})",
+      "functionNotFound": "Definition of {name} not found, skipping",
+      "drillStart": "Starting recursive analysis (max depth: {depth})",
+      "drillComplete": "Analysis complete: {total} functions analyzed",
+      "callGraphFailed": "Call graph analysis failed: {reason}",
+      "noEntryFiles": "No entry files identified — call graph skipped",
+      "rateLimitExceeded": "GitHub API rate limit exceeded. {hint}",
+      "rateLimitNoToken": "Set GITHUB_TOKEN in .env.local for higher limits (60 → 5,000 req/hr).",
+      "rateLimitResetAt": "Rate limit resets at {time}.",
+      "rateLimitRemaining": "GitHub API quota: {remaining}/{limit} requests remaining",
+      "rateLimitLow": "GitHub API quota low: {remaining}/{limit} — resets at {time}",
+      "cacheHit": "Using cached data for {key}"
     }
   }
 }

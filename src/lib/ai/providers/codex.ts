@@ -32,9 +32,10 @@ function extractTextFromCodexJsonl(output: string): string {
 async function analyzeViaCli(
   files: readonly CodeFileInfo[],
   repoName: string,
+  fileContents?: ReadonlyMap<string, string>,
 ): Promise<AIAnalysisResult> {
   const systemPrompt = buildSystemPrompt();
-  const userPrompt = buildUserPrompt(repoName, files);
+  const userPrompt = buildUserPrompt(repoName, files, fileContents);
   const combinedPrompt = `${systemPrompt}\n\n${userPrompt}`;
 
   return new Promise<AIAnalysisResult>((resolve, reject) => {
@@ -112,7 +113,10 @@ async function analyzeViaCli(
 export function createCodexProvider(): AIProvider {
   return Object.freeze({
     name: 'codex',
-    analyze: (files: readonly CodeFileInfo[], repoName: string): Promise<AIAnalysisResult> =>
-      analyzeViaCli(files, repoName),
+    analyze: (
+      files: readonly CodeFileInfo[],
+      repoName: string,
+      fileContents?: ReadonlyMap<string, string>,
+    ): Promise<AIAnalysisResult> => analyzeViaCli(files, repoName, fileContents),
   });
 }

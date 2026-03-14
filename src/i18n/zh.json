@@ -57,7 +57,19 @@
     "panelToggle": {
       "left": "切换左侧面板",
       "center": "切换文件树面板",
-      "right": "切换代码查看面板"
+      "right": "切换代码查看面板",
+      "callGraph": "切换调用全景图面板"
+    },
+    "callGraph": {
+      "title": "调用全景图",
+      "empty": "分析完成后将展示函数调用全景图",
+      "zoomIn": "放大",
+      "zoomOut": "缩小",
+      "fullscreen": "全屏",
+      "exitFullscreen": "退出全屏",
+      "progress": "分析中：{analyzed}/{total}",
+      "currentFunction": "正在分析：{name}",
+      "cancelAnalysis": "取消分析"
     },
     "codeViewer": {
       "title": "代码",
@@ -80,7 +92,27 @@
       "aiStarted": "AI 分析已开始（{provider}）",
       "aiComplete": "AI 分析完成，耗时 {duration}ms",
       "aiFailed": "AI 分析失败：{error}",
-      "remainingBytes": "剩余 {count} 字节"
+      "remainingBytes": "剩余 {count} 字节",
+      "entryVerifyStart": "正在验证入口文件：{path}...",
+      "entryVerifyConfirmed": "确认入口文件：{path}，入口函数：{name}",
+      "entryVerifyRejected": "{path} 不是入口文件：{reason}",
+      "entryVerifyComplete": "入口函数识别完成：{path}:{name}",
+      "entryVerifyNone": "未能确认入口文件",
+      "functionAnalyzeStart": "正在分析 {name} 的关键子函数...",
+      "functionAnalyzeResult": "识别到 {count} 个关键子函数",
+      "functionLocating": "正在定位函数 {name}...",
+      "functionLocated": "在 {file} 中找到 {name}（第{line}行）",
+      "functionNotFound": "未找到 {name} 的定义，跳过",
+      "drillStart": "开始递归分析函数调用链（最大深度：{depth}）",
+      "drillComplete": "递归分析完成，共分析 {total} 个函数",
+      "callGraphFailed": "调用全景图分析失败：{reason}",
+      "noEntryFiles": "未识别到入口文件，跳过调用全景图",
+      "rateLimitExceeded": "GitHub API 请求频率超限。{hint}",
+      "rateLimitNoToken": "请在 .env.local 中设置 GITHUB_TOKEN 以提高限额（60 → 5,000 次/小时）。",
+      "rateLimitResetAt": "频率限制将于 {time} 重置。",
+      "rateLimitRemaining": "GitHub API 配额：剩余 {remaining}/{limit} 次请求",
+      "rateLimitLow": "GitHub API 配额不足：{remaining}/{limit} — 将于 {time} 重置",
+      "cacheHit": "使用 {key} 的缓存数据"
     }
   }
 }

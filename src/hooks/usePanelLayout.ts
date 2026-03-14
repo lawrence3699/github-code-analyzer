@@ -12,14 +12,14 @@ import {
 export interface UsePanelLayoutReturn {
   /** Ref to attach to the container div */
   readonly containerRef: React.RefObject<HTMLDivElement | null>;
-  /** Current pixel widths for [left, center, right] */
-  readonly widths: readonly [number, number, number];
+  /** Current pixel widths for [left, center, right, callGraph] */
+  readonly widths: readonly [number, number, number, number];
   /** Panel visibility state */
   readonly visibility: PanelVisibility;
   /** Toggle a panel's visibility */
-  readonly togglePanel: (panel: 'left' | 'center' | 'right') => void;
+  readonly togglePanel: (panel: 'left' | 'center' | 'right' | 'callGraph') => void;
   /** Props to spread on handle elements */
-  readonly getHandleProps: (index: 0 | 1) => {
+  readonly getHandleProps: (index: 0 | 1 | 2) => {
     readonly onMouseDown: (e: React.MouseEvent) => void;
     readonly style: React.CSSProperties;
   };
@@ -29,20 +29,21 @@ export interface UsePanelLayoutReturn {
 
 export function usePanelLayout(): UsePanelLayoutReturn {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [ratios, setRatios] = useState<readonly [number, number, number]>(DEFAULT_RATIOS);
+  const [ratios, setRatios] = useState<readonly [number, number, number, number]>(DEFAULT_RATIOS);
   const [visibility, setVisibility] = useState<PanelVisibility>({
     left: true,
     center: true,
     right: true,
+    callGraph: true,
   });
   const [containerWidth, setContainerWidth] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
   // Track drag state in refs to avoid stale closures in global listeners
   const dragRef = useRef<{
-    handleIndex: 0 | 1;
+    handleIndex: 0 | 1 | 2;
     startX: number;
-    startRatios: readonly [number, number, number];
+    startRatios: readonly [number, number, number, number];
   } | null>(null);
 
   // Observe container width changes
@@ -64,7 +65,7 @@ export function usePanelLayout(): UsePanelLayoutReturn {
     [ratios, visibility, containerWidth],
   );
 
-  const togglePanel = useCallback((panel: 'left' | 'center' | 'right') => {
+  const togglePanel = useCallback((panel: 'left' | 'center' | 'right' | 'callGraph') => {
     setVisibility((prev) => togglePanelVisibility(prev, panel));
   }, []);
 
@@ -100,7 +101,7 @@ export function usePanelLayout(): UsePanelLayoutReturn {
   }, [containerWidth]);
 
   const getHandleProps = useCallback(
-    (index: 0 | 1) => ({
+    (index: 0 | 1 | 2) => ({
       onMouseDown: (e: React.MouseEvent): void => {
         e.preventDefault();
         dragRef.current = {

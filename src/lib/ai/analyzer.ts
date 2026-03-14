@@ -124,7 +124,7 @@ export async function analyzeRepository(
   let result: AIAnalysisResult;
 
   try {
-    result = await aiProvider.analyze(files, repoName);
+    result = await aiProvider.analyze(files, repoName, fileContents);
     rawResponse = JSON.stringify(result);
   } catch (error) {
     const elapsed = Math.round(performance.now() - startTime);
