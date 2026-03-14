@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GitHub Code Analyzer",
+  title: "CodePrism",
   description: "Visualize and understand code structure with AI",
 };
 

@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "GitHub 代码分析器",
+    "appName": "CodePrism",
     "appDescription": "通过 AI 可视化和理解代码结构",
     "loading": "加载中...",
     "error": "错误",

@@ -22,7 +22,7 @@ export function Logo({ compact = false }: LogoProps): React.ReactElement {
           compact ? 'text-lg' : 'text-3xl',
         )}
       >
-        GitHub Code Analyzer
+        CodePrism
       </span>
     </div>
   );

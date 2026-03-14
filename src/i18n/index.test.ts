@@ -3,12 +3,12 @@ import { getTranslation, interpolate } from './index';
 describe('getTranslation', () => {
   it('should return English translation for a top-level key', () => {
     const result = getTranslation('en', 'common.appName');
-    expect(result).toBe('GitHub Code Analyzer');
+    expect(result).toBe('CodePrism');
   });
 
   it('should return Chinese translation for a top-level key', () => {
     const result = getTranslation('zh', 'common.appName');
-    expect(result).toBe('GitHub 代码分析器');
+    expect(result).toBe('CodePrism');
   });
 
   it('should return deeply nested key', () => {

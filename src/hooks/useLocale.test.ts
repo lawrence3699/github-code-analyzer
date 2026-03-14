@@ -56,7 +56,7 @@ describe('useLocale', () => {
   it('should return correct English translation via t()', () => {
     const { result } = renderHook(() => useLocale());
 
-    expect(result.current.t('common.appName')).toBe('GitHub Code Analyzer');
+    expect(result.current.t('common.appName')).toBe('CodePrism');
   });
 
   it('should return correct Chinese translation after locale switch', () => {
@@ -65,7 +65,7 @@ describe('useLocale', () => {
     const { result } = renderHook(() => useLocale());
 
     const translated = result.current.t('common.appName');
-    expect(translated).not.toBe('GitHub Code Analyzer');
+    expect(translated).toBe('CodePrism');
     expect(typeof translated).toBe('string');
   });
 

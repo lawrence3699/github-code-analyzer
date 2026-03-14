@@ -1,4 +1,4 @@
-# GitHub Code Analyzer
+# CodePrism
 
 [中文版](#中文说明) | [English](#english)
 

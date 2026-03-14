@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "GitHub Code Analyzer",
+    "appName": "CodePrism",
     "appDescription": "Visualize and understand code structure with AI",
     "loading": "Loading...",
     "error": "Error",
