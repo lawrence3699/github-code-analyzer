@@ -52,7 +52,13 @@
       "searchPlaceholder": "搜索文件...",
       "fileCount": "{count} 个文件",
       "noFiles": "未找到文件",
-      "loading": "正在加载文件树..."
+      "loading": "正在加载文件树...",
+      "fileSearchTab": "文件",
+      "functionSearchTab": "函数",
+      "searchFunction": "搜索函数...",
+      "functionResults": "在 {count} 个文件中找到此函数",
+      "noFunctionResults": "未找到相关文件",
+      "searchingFunction": "搜索中..."
     },
     "panelToggle": {
       "left": "切换左侧面板",
@@ -69,7 +75,30 @@
       "exitFullscreen": "退出全屏",
       "progress": "分析中：{analyzed}/{total}",
       "currentFunction": "正在分析：{name}",
-      "cancelAnalysis": "取消分析"
+      "cancelAnalysis": "取消分析",
+      "manualEntry": "手动指定入口",
+      "selectFile": "请先从文件树中选择一个文件",
+      "functionName": "函数名",
+      "startAnalysis": "开始分析",
+      "manualEntryHint": "或手动指定入口函数",
+      "clickToView": "点击查看源码"
+    },
+    "progress": {
+      "title": "分析进度",
+      "repoValidation": "验证仓库",
+      "fetchingTree": "获取文件树",
+      "aiAnalysis": "AI 分析",
+      "entryVerification": "入口验证（{current}/{total}）",
+      "callGraph": "调用图分析（{analyzed}/{total}）",
+      "complete": "分析完成",
+      "cancelAll": "取消"
+    },
+    "export": {
+      "title": "导出",
+      "json": "导出 JSON",
+      "markdown": "导出 Markdown",
+      "copied": "已复制到剪贴板",
+      "downloaded": "文件已下载"
     },
     "codeViewer": {
       "title": "代码",

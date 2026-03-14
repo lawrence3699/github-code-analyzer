@@ -52,7 +52,13 @@
       "searchPlaceholder": "Search files...",
       "fileCount": "{count} files",
       "noFiles": "No files found",
-      "loading": "Loading file tree..."
+      "loading": "Loading file tree...",
+      "fileSearchTab": "File",
+      "functionSearchTab": "Function",
+      "searchFunction": "Search function...",
+      "functionResults": "{count} files contain this function",
+      "noFunctionResults": "No files found",
+      "searchingFunction": "Searching..."
     },
     "panelToggle": {
       "left": "Toggle left panel",
@@ -69,7 +75,30 @@
       "exitFullscreen": "Exit fullscreen",
       "progress": "Analyzing: {analyzed}/{total}",
       "currentFunction": "Analyzing: {name}",
-      "cancelAnalysis": "Cancel Analysis"
+      "cancelAnalysis": "Cancel Analysis",
+      "manualEntry": "Manual Entry",
+      "selectFile": "Select a file from the tree first",
+      "functionName": "Function name",
+      "startAnalysis": "Start Analysis",
+      "manualEntryHint": "Or manually specify an entry function",
+      "clickToView": "Click to view source"
+    },
+    "progress": {
+      "title": "Analysis Progress",
+      "repoValidation": "Validating repository",
+      "fetchingTree": "Fetching file tree",
+      "aiAnalysis": "AI analysis",
+      "entryVerification": "Entry verification ({current}/{total})",
+      "callGraph": "Call graph ({analyzed}/{total})",
+      "complete": "Analysis complete",
+      "cancelAll": "Cancel"
+    },
+    "export": {
+      "title": "Export",
+      "json": "Export JSON",
+      "markdown": "Export Markdown",
+      "copied": "Copied to clipboard",
+      "downloaded": "File downloaded"
     },
     "codeViewer": {
       "title": "Code",

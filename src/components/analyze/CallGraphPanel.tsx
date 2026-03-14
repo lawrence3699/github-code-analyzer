@@ -18,6 +18,9 @@ interface CallGraphPanelProps {
   readonly stats?: CallGraphStats;
   readonly currentFunction?: string | null;
   readonly onCancel?: () => void;
+  readonly selectedFile?: string | null;
+  readonly onManualEntry?: (filePath: string, functionName: string) => void;
+  readonly onNodeClick?: (filePath: string, functionName: string) => void;
 }
 
 // ===== Layout constants — vertical top-down trunk layout =====
@@ -147,19 +150,41 @@ function renderEdges(layout: LayoutNode): React.ReactElement[] {
   return edges;
 }
 
+// ===== Clickable status check =====
+const CLICKABLE_STATUSES = new Set(['analyzed', 'skipped']);
+
 // ===== Node card component (two-section UML style) =====
-function NodeCard({ node }: { readonly node: CallGraphNode }): React.ReactElement {
+function NodeCard({
+  node,
+  onClick,
+  tooltip,
+}: {
+  readonly node: CallGraphNode;
+  readonly onClick?: () => void;
+  readonly tooltip?: string;
+}): React.ReactElement {
   const isRoot = node.depth === 0;
   const bodyBg = STATUS_BODY_BG[node.status] ?? STATUS_BODY_BG.analyzed;
   const dotColor = STATUS_DOT_COLORS[node.status] ?? STATUS_DOT_COLORS.skipped;
   const isPending = node.status === 'pending';
   const borderWidth = isRoot ? 'border-[3px]' : 'border-2';
   const dividerWidth = isRoot ? 'border-b-[3px]' : 'border-b-2';
+  const isClickable = CLICKABLE_STATUSES.has(node.status) && onClick != null;
+
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    if (!isClickable) return;
+    e.stopPropagation();
+    onClick?.();
+  }, [isClickable, onClick]);
 
   return (
     <div
-      className={`${borderWidth} border-gray-700 dark:border-slate-400 rounded-xl overflow-hidden shadow-md`}
+      className={`${borderWidth} border-gray-700 dark:border-slate-400 rounded-xl overflow-hidden shadow-md ${isClickable ? 'cursor-pointer hover:ring-2 hover:ring-blue-400 transition-shadow' : ''}`}
       style={{ width: NODE_WIDTH }}
+      title={isClickable ? tooltip : undefined}
+      onClick={handleClick}
+      role={isClickable ? 'button' : undefined}
+      tabIndex={isClickable ? 0 : undefined}
     >
       {/* Header: file path + status dot */}
       <div className={`px-3 py-1.5 ${dividerWidth} border-gray-700 dark:border-slate-400 bg-gray-100 dark:bg-slate-800`}>
@@ -186,8 +211,17 @@ function NodeCard({ node }: { readonly node: CallGraphNode }): React.ReactElemen
 }
 
 // ===== Render all nodes recursively =====
-function renderNodes(layout: LayoutNode): React.ReactElement[] {
+function renderNodes(
+  layout: LayoutNode,
+  onNodeClick?: (filePath: string, functionName: string) => void,
+  tooltip?: string,
+): React.ReactElement[] {
   const nodes: React.ReactElement[] = [];
+  const node = layout.node;
+
+  const handleClick = CLICKABLE_STATUSES.has(node.status) && onNodeClick
+    ? (): void => onNodeClick(node.filePath, node.functionName)
+    : undefined;
 
   nodes.push(
     <div
@@ -195,12 +229,12 @@ function renderNodes(layout: LayoutNode): React.ReactElement[] {
       className="absolute"
       style={{ left: layout.x, top: layout.y }}
     >
-      <NodeCard node={layout.node} />
+      <NodeCard node={node} onClick={handleClick} tooltip={tooltip} />
     </div>,
   );
 
   for (const child of layout.children) {
-    nodes.push(...renderNodes(child));
+    nodes.push(...renderNodes(child, onNodeClick, tooltip));
   }
 
   return nodes;
@@ -243,10 +277,11 @@ function ToolbarButton({
   );
 }
 
-export function CallGraphPanel({ callGraph, loading, stats, currentFunction, onCancel }: CallGraphPanelProps): React.ReactElement {
+export function CallGraphPanel({ callGraph, loading, stats, currentFunction, onCancel, selectedFile, onManualEntry, onNodeClick }: CallGraphPanelProps): React.ReactElement {
   const { t } = useLocale();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const [manualFunctionName, setManualFunctionName] = useState('');
 
   // Pan & zoom state
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
@@ -396,15 +431,80 @@ export function CallGraphPanel({ callGraph, loading, stats, currentFunction, onC
     ? 'fixed inset-0 z-50 flex flex-col bg-gray-50 dark:bg-slate-900'
     : 'h-full flex flex-col bg-gray-50 dark:bg-slate-900';
 
+  // Manual entry form submit handler
+  const handleManualEntrySubmit = useCallback(() => {
+    if (selectedFile && manualFunctionName.trim() && onManualEntry) {
+      onManualEntry(selectedFile, manualFunctionName.trim());
+    }
+  }, [selectedFile, manualFunctionName, onManualEntry]);
+
+  const handleFunctionNameChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setManualFunctionName(e.target.value);
+    },
+    [],
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        handleManualEntrySubmit();
+      }
+    },
+    [handleManualEntrySubmit],
+  );
+
+  const isManualEntryDisabled = !selectedFile || !manualFunctionName.trim();
+
   // Empty state
   if (!callGraph && !loading) {
     return (
       <div ref={panelRef} className={wrapperClass}>
         {headerBar}
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-4">
           <p className="text-sm text-gray-400 dark:text-slate-500">
             {t('analyze.callGraph.empty')}
           </p>
+
+          {/* Manual entry form */}
+          <div className="w-full max-w-xs space-y-3">
+            <p className="text-xs text-gray-400 dark:text-slate-500 text-center">
+              {t('analyze.callGraph.manualEntryHint')}
+            </p>
+
+            {/* Selected file display */}
+            <div>
+              <input
+                type="text"
+                readOnly
+                value={selectedFile ?? ''}
+                placeholder={t('analyze.callGraph.selectFile')}
+                className="w-full px-2.5 py-1.5 text-xs font-mono rounded border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 placeholder-gray-400 dark:placeholder-slate-500 cursor-default"
+              />
+            </div>
+
+            {/* Function name input */}
+            <div>
+              <input
+                type="text"
+                value={manualFunctionName}
+                onChange={handleFunctionNameChange}
+                onKeyDown={handleKeyDown}
+                placeholder={t('analyze.callGraph.functionName')}
+                className="w-full px-2.5 py-1.5 text-xs font-mono rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              />
+            </div>
+
+            {/* Start analysis button */}
+            <button
+              type="button"
+              disabled={isManualEntryDisabled}
+              onClick={handleManualEntrySubmit}
+              className="w-full px-3 py-1.5 text-xs font-medium rounded bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {t('analyze.callGraph.startAnalysis')}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -438,7 +538,7 @@ export function CallGraphPanel({ callGraph, loading, stats, currentFunction, onC
               >
                 {renderEdges(layout)}
               </svg>
-              {renderNodes(layout)}
+              {renderNodes(layout, onNodeClick, t('analyze.callGraph.clickToView'))}
             </>
           )}
         </div>

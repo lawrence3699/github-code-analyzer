@@ -1,14 +1,29 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { Download } from 'lucide-react';
 import type { LogEntry } from '../../types/log';
-import type { AIAnalysisResult, AIProviderName } from '../../types/ai';
+import type { AIAnalysisResult, AIProviderName, CallGraphNode } from '../../types/ai';
 import { useLocale } from '../../hooks/useLocale';
 import { validateGitHubUrl } from '../../lib/validators';
+import { exportAsJson, exportAsMarkdown } from '../../lib/export';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { LogPanel } from './LogPanel';
 import { AIAnalysisResult as AIResultDisplay } from './AIAnalysisResult';
+import { ProgressBar } from './ProgressBar';
+
+interface ProgressData {
+  readonly repoLoading: boolean;
+  readonly treeLoading: boolean;
+  readonly entryVerifying: boolean;
+  readonly entryProgress: { readonly current: number; readonly total: number };
+  readonly entryCurrentFile: string | null;
+  readonly callGraphAnalyzing: boolean;
+  readonly callGraphStats: { readonly analyzed: number; readonly total: number };
+  readonly callGraphCurrentFunction: string | null;
+  readonly isComplete: boolean;
+}
 
 interface LeftPanelProps {
   readonly repoUrl: string;
@@ -16,10 +31,25 @@ interface LeftPanelProps {
   readonly aiResult: AIAnalysisResult | null;
   readonly aiLoading: boolean;
   readonly aiError: string | null;
+  readonly callGraph: CallGraphNode | null;
+  readonly progress: ProgressData;
   readonly onAnalyze: (url: string, provider: AIProviderName) => void;
   readonly onClearLogs: () => void;
   readonly onRetryAI: (provider: AIProviderName) => void;
   readonly onSelectFile: (path: string) => void;
+  readonly onCancelAll: () => void;
+}
+
+function triggerDownload(content: string, filename: string, mimeType: string): void {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
 }
 
 const PROVIDER_OPTIONS: readonly { value: AIProviderName; label: string }[] = [
@@ -33,10 +63,13 @@ export function LeftPanel({
   aiResult,
   aiLoading,
   aiError,
+  callGraph,
+  progress,
   onAnalyze,
   onClearLogs,
   onRetryAI,
   onSelectFile,
+  onCancelAll,
 }: LeftPanelProps): React.ReactElement {
   const { t } = useLocale();
   const [inputUrl, setInputUrl] = useState(repoUrl);
@@ -64,6 +97,28 @@ export function LeftPanel({
   const handleRetry = useCallback((): void => {
     onRetryAI(provider);
   }, [onRetryAI, provider]);
+
+  const handleExportJson = useCallback((): void => {
+    if (!aiResult) return;
+    const projectName = aiResult.project_name || 'analysis';
+    const content = exportAsJson(aiResult, callGraph);
+    triggerDownload(content, `${projectName}-analysis.json`, 'application/json');
+  }, [aiResult, callGraph]);
+
+  const handleExportMarkdown = useCallback((): void => {
+    if (!aiResult) return;
+    const projectName = aiResult.project_name || 'analysis';
+    const content = exportAsMarkdown(aiResult, callGraph);
+    triggerDownload(content, `${projectName}-analysis.md`, 'text/markdown');
+  }, [aiResult, callGraph]);
+
+  const showProgress =
+    progress.repoLoading ||
+    progress.treeLoading ||
+    aiLoading ||
+    progress.entryVerifying ||
+    progress.callGraphAnalyzing ||
+    progress.isComplete;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -109,6 +164,23 @@ export function LeftPanel({
         </div>
       </form>
 
+      {/* Progress Bar */}
+      {(showProgress) && (
+        <ProgressBar
+          repoLoading={progress.repoLoading}
+          treeLoading={progress.treeLoading}
+          aiLoading={aiLoading}
+          entryVerifying={progress.entryVerifying}
+          entryProgress={progress.entryProgress}
+          entryCurrentFile={progress.entryCurrentFile}
+          callGraphAnalyzing={progress.callGraphAnalyzing}
+          callGraphStats={progress.callGraphStats}
+          callGraphCurrentFunction={progress.callGraphCurrentFunction}
+          isComplete={progress.isComplete}
+          onCancel={onCancelAll}
+        />
+      )}
+
       {/* AI Analysis Result */}
       <div className="border-b border-gray-200 dark:border-slate-700 shrink-0 max-h-[40%] overflow-y-auto">
         <AIResultDisplay
@@ -119,6 +191,33 @@ export function LeftPanel({
           onSelectFile={onSelectFile}
         />
       </div>
+
+      {/* Export Toolbar */}
+      {aiResult && (
+        <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-200 dark:border-slate-700 shrink-0">
+          <span className="text-xs font-medium text-gray-500 dark:text-slate-400 mr-auto">
+            {t('analyze.export.title')}
+          </span>
+          <button
+            type="button"
+            onClick={handleExportJson}
+            className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+            title={t('analyze.export.json')}
+          >
+            <Download className="h-3 w-3" />
+            JSON
+          </button>
+          <button
+            type="button"
+            onClick={handleExportMarkdown}
+            className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+            title={t('analyze.export.markdown')}
+          >
+            <Download className="h-3 w-3" />
+            Markdown
+          </button>
+        </div>
+      )}
 
       {/* Log Panel */}
       <div className="flex-1 min-h-0">

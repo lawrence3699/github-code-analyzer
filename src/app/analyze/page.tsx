@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useRef } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
@@ -253,6 +253,81 @@ function AnalyzeContent(): React.ReactElement {
     [github.selectFile],
   );
 
+  const handleNodeClick = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    (filePath: string, _functionName: string): void => {
+      github.selectFile(filePath);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [github.selectFile],
+  );
+
+  const handleManualEntry = useCallback(
+    (filePath: string, functionName: string): void => {
+      if (!github.repoInfo) return;
+
+      const [owner, repo] = github.repoInfo.fullName.split('/');
+      const fileList = flattenTreePaths(github.tree);
+      const primaryLanguages = ai.result?.primary_languages.map((l) => l.language) ?? [];
+
+      callGraphHook.analyzeEntryFunction(filePath, functionName, {
+        owner,
+        repo,
+        repoName: github.repoInfo.name,
+        summary: ai.result?.summary ?? '',
+        primaryLanguages,
+        fileList,
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [github.repoInfo, github.tree, ai.result, callGraphHook.analyzeEntryFunction],
+  );
+
+  const handleCancelAll = useCallback((): void => {
+    entryVerification.cancel();
+    callGraphHook.cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entryVerification.cancel, callGraphHook.cancel]);
+
+  const isAnyLoading =
+    github.loading ||
+    github.treeLoading ||
+    ai.loading ||
+    entryVerification.verifying ||
+    callGraphHook.analyzing;
+
+  const isComplete =
+    !isAnyLoading &&
+    ai.result !== null &&
+    !entryVerification.verifying &&
+    !callGraphHook.analyzing;
+
+  const progressData = useMemo(
+    () => ({
+      repoLoading: github.loading,
+      treeLoading: github.treeLoading,
+      entryVerifying: entryVerification.verifying,
+      entryProgress: entryVerification.progress,
+      entryCurrentFile: entryVerification.currentFile,
+      callGraphAnalyzing: callGraphHook.analyzing,
+      callGraphStats: { analyzed: callGraphHook.stats.analyzed, total: callGraphHook.stats.total },
+      callGraphCurrentFunction: callGraphHook.currentFunction,
+      isComplete,
+    }),
+    [
+      github.loading,
+      github.treeLoading,
+      entryVerification.verifying,
+      entryVerification.progress,
+      entryVerification.currentFile,
+      callGraphHook.analyzing,
+      callGraphHook.stats.analyzed,
+      callGraphHook.stats.total,
+      callGraphHook.currentFunction,
+      isComplete,
+    ],
+  );
+
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-slate-950 text-gray-900 dark:text-slate-100">
       {/* Top Bar */}
@@ -294,10 +369,13 @@ function AnalyzeContent(): React.ReactElement {
               aiResult={ai.result}
               aiLoading={ai.loading}
               aiError={ai.error}
+              callGraph={callGraphHook.callGraph}
+              progress={progressData}
               onAnalyze={handleAnalyze}
               onClearLogs={clearLogs}
               onRetryAI={handleRetryAI}
               onSelectFile={handleSelectFile}
+              onCancelAll={handleCancelAll}
             />
           </div>
         )}
@@ -318,6 +396,8 @@ function AnalyzeContent(): React.ReactElement {
               loading={github.treeLoading}
               selectedPath={github.selectedFile}
               onSelectFile={handleSelectFile}
+              owner={github.repoInfo?.fullName.split('/')[0]}
+              repo={github.repoInfo?.fullName.split('/')[1]}
             />
           </div>
         )}
@@ -359,6 +439,9 @@ function AnalyzeContent(): React.ReactElement {
               stats={callGraphHook.stats}
               currentFunction={callGraphHook.currentFunction}
               onCancel={callGraphHook.cancel}
+              selectedFile={github.selectedFile}
+              onManualEntry={handleManualEntry}
+              onNodeClick={handleNodeClick}
             />
           </div>
         )}
